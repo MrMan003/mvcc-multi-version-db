@@ -291,9 +291,103 @@ def test_write_write_conflict():
     print("✅ TX1 succeeded, TX2 aborted due to conflict")
 
 
+def test_bank_transfer():
+    """Test 6: Bank transfer"""
+    print("\n" + "=" * 60)
+    print("TEST 6: Bank Transfer (Multi-key)")
+    print("=" * 60)
+
+    store = VersionStore()
+    mgr = TransactionManager(store)
+
+    store.write('alice', 1000)
+    store.write('bob', 1000)
+
+    tx = mgr.begin_transaction()
+    alice = mgr.read(tx, 'alice')
+    bob = mgr.read(tx, 'bob')
+
+    mgr.write(tx, 'alice', alice - 100)
+    mgr.write(tx, 'bob', bob + 100)
+
+    result = mgr.commit(tx)
+    assert result is True
+
+    assert store.read('alice', store.get_current_version()) == 900
+    assert store.read('bob', store.get_current_version()) == 1100
+
+    print("✅ Transfer successful")
+
+
+def test_concurrent_transactions():
+    """Test 7: Concurrent stress test"""
+    print("\n" + "=" * 60)
+    print("TEST 7: Concurrent Stress Test (50 Transactions)")
+    print("=" * 60)
+
+    store = VersionStore()
+    mgr = TransactionManager(store)
+
+    for i in range(5):
+        store.write(f'account_{i}', 1000)
+
+    success = [0]
+    failed = [0]
+    lock = threading.Lock()
+
+    def worker():
+        import random
+
+        for _ in range(10):
+            from_acc = random.randint(0, 4)
+            to_acc = random.randint(0, 4)
+            amount = random.randint(1, 50)
+
+            if from_acc == to_acc:
+                continue
+
+            tx = mgr.begin_transaction()
+            from_bal = mgr.read(tx, f'account_{from_acc}')
+            to_bal = mgr.read(tx, f'account_{to_acc}')
+
+            if from_bal >= amount:
+                mgr.write(tx, f'account_{from_acc}', from_bal - amount)
+                mgr.write(tx, f'account_{to_acc}', to_bal + amount)
+
+                if mgr.commit(tx):
+                    with lock:
+                        success[0] += 1
+                else:
+                    with lock:
+                        failed[0] += 1
+
+    threads = []
+    for _ in range(5):
+        t = threading.Thread(target=worker)
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    total = success[0] + failed[0]
+    print(f"\nResults:")
+    print(f"  Successful: {success[0]}")
+    print(f"  Failed: {failed[0]}")
+    print(f"  Success rate: {success[0]/total*100:.1f}%")
+
+    total_money = sum(
+        store.read(f'account_{i}', store.get_current_version())
+        for i in range(5)
+    )
+    assert total_money == 5000
+
+    print(f"✅ Data consistency: Money conserved (${total_money})")
+
+
 if __name__ == '__main__':
     print("\n" + "=" * 70)
-    print("DAY 1 COMMIT 5: Conflict Detection")
+    print("DAY 1: FOUNDATION + CONFLICT DETECTION")
     print("=" * 70)
 
     test_basic_versioning()
@@ -301,7 +395,10 @@ if __name__ == '__main__':
     test_simple_commit()
     test_transaction_isolation()
     test_write_write_conflict()
+    test_bank_transfer()
+    test_concurrent_transactions()
 
     print("\n" + "=" * 70)
-    print("ALL 5 TESTS PASSED! ✅")
+    print("ALL 7 TESTS PASSED! ✅")
     print("=" * 70)
+    print("\nReady for Day 2!")
