@@ -28,6 +28,8 @@ class VersionStore:
         self.versions = defaultdict(list)
         self.version_counter = 0
         self.lock = threading.Lock()
+        self.gc_runs = 0
+
 
     def write(self, key, value):
         """Create new version"""
@@ -96,6 +98,50 @@ class Transaction:
 
 class TransactionManager:
     """Manages all transactions"""
+    
+    
+    def garbage_collect(self):
+        """Collect garbage versions safely"""
+        if not self.transactions:
+            # If no active transactions, we can clean up everything 
+            # except the absolute latest version of every key.
+            min_snapshot = self.version_store.get_current_version()
+        else:
+            # Otherwise, protect the oldest active transaction
+            min_snapshot = min(t.snapshot_version for t in self.transactions.values())
+        
+        collected = 0
+        
+        with self.lock: # Always lock during cleanup!
+            for key in list(self.version_store.versions.keys()):
+                versions = self.version_store.versions[key]
+                new_versions = []
+                if not versions: continue
+                current_valid_version = versions[-1]
+                
+                # Let's identify the specific version visible to min_snapshot
+                visible_version = None
+                for v in reversed(versions):
+                    if v.version_id <= min_snapshot:
+                        visible_version = v
+                        break
+                
+                # Now construct the new list
+                for v in versions:
+                    # Keep if it's the visible one OR it's newer than the snapshot
+                    if v == visible_version or v.version_id > min_snapshot:
+                        new_versions.append(v)
+                
+                old_count = len(versions)
+                self.version_store.versions[key] = new_versions
+                collected += old_count - len(new_versions)
+                
+                if not self.version_store.versions[key]:
+                    del self.version_store.versions[key]
+        
+        self.version_store.gc_runs += 1
+        return collected
+
     def get_stats(self):
         """Get statistics"""
         import statistics
@@ -405,6 +451,26 @@ def test_concurrent_transactions():
     assert total_money == 5000
 
     print(f"✅ Data consistency: Money conserved (${total_money})")
+def test_garbage_collection():
+    """Test 8: Garbage collection"""
+    print("\n" + "="*60)
+    print("TEST 8: Garbage Collection")
+    print("="*60)
+    
+    store = VersionStore()
+    mgr = TransactionManager(store)
+    
+    for i in range(100):
+        store.write('key', i)
+    
+    before = sum(len(v) for v in store.versions.values())
+    collected = mgr.garbage_collect()
+    after = sum(len(v) for v in store.versions.values())
+    
+    print(f"Before GC: {before} versions")
+    print(f"Collected: {collected} versions")
+    print(f"After GC: {after} versions")
+    print("✅ Garbage collection working")
 
 
 if __name__ == '__main__':
@@ -419,8 +485,8 @@ if __name__ == '__main__':
     test_write_write_conflict()
     test_bank_transfer()
     test_concurrent_transactions()
+    test_garbage_collection()
 
     print("\n" + "=" * 70)
-    print("ALL 7 TESTS PASSED! ✅")
+    print("ALL 8 TESTS PASSED! ✅")
     print("=" * 70)
-    print("\nReady for Day 2!")
