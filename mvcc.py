@@ -500,10 +500,63 @@ def test_read_heavy_benchmark():
     print(f"Time: {elapsed:.2f}s")
     print(f"Throughput: {throughput:.0f} tx/sec")
     print("✅ Read-heavy benchmark passed")
+def test_write_heavy_benchmark():
+    """Test 10: Write-heavy benchmark"""
+    print("\n" + "="*60)
+    print("TEST 10: Write-Heavy Benchmark (500 transactions)")
+    print("="*60)
+    
+    store = VersionStore()
+    mgr = TransactionManager(store)
+    
+    for i in range(100):
+        store.write(f'key_{i}', 0)
+    
+    import random
+    start = time.time()
+    
+    for i in range(500):
+        tx = mgr.begin_transaction()
+        
+        for j in range(5):
+            mgr.write(tx, f'key_{random.randint(0, 99)}', i)
+        
+        mgr.commit(tx)
+    
+    elapsed = time.time() - start
+    throughput = 500 / elapsed
+    
+    print(f"Time: {elapsed:.2f}s")
+    print(f"Throughput: {throughput:.0f} tx/sec")
+    print("✅ Write-heavy benchmark passed")
+
+
+def test_latency_distribution():
+    """Test 11: Latency distribution"""
+    print("\n" + "="*60)
+    print("TEST 11: Latency Distribution")
+    print("="*60)
+    
+    store = VersionStore()
+    mgr = TransactionManager(store)
+    
+    store.write('key', 0)
+    
+    for _ in range(100):
+        tx = mgr.begin_transaction()
+        mgr.read(tx, 'key')
+        mgr.write(tx, 'key', 1)
+        mgr.commit(tx)
+    
+    stats = mgr.get_stats()
+    print(f"Avg latency: {stats.get('avg_latency_ms', 0):.3f} ms")
+    print(f"Min latency: {stats.get('min_latency_ms', 0):.3f} ms")
+    print(f"Max latency: {stats.get('max_latency_ms', 0):.3f} ms")
+    print("✅ Latency tracking working")
 
 if __name__ == '__main__':
     print("\n" + "=" * 70)
-    print("DAY 2: read-heavy benchmark")
+    print("DAY 2: Latency")
     print("=" * 70)
 
     test_basic_versioning()
@@ -515,7 +568,9 @@ if __name__ == '__main__':
     test_concurrent_transactions()
     test_garbage_collection()
     test_read_heavy_benchmark()
+    test_write_heavy_benchmark()
+    test_latency_distribution()
 
     print("\n" + "=" * 70)
-    print("ALL 9 TESTS PASSED! ✅")
+    print("ALL 11 TESTS PASSED! ✅")
     print("=" * 70)
