@@ -1,0 +1,7 @@
+# MVCC - No external dependencies required
+
+# Pure Python implementation using only stdlib:
+# - collections
+# - threading
+# - time
+# - statistics (Python 3.4+)

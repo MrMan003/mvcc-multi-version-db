@@ -1,3 +1,19 @@
+# Python
 *.pyc
 __pycache__/
+*.egg-info/
+.pytest_cache/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Test
+.coverage
+htmlcov/
