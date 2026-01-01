@@ -1,271 +1,301 @@
-# Search Engine – Performance & Scalability Report
+MVCC Database (Multi-Version Concurrency Control)
+A from-scratch implementation of MVCC in pure Python, built as a systems design and database internals project.
+This project demonstrates how modern databases achieve high concurrency without locking, using multi-version storage, snapshot isolation, and conflict detection.
+Quick Start
+# MVCC Database (Multi-Version Concurrency Control)
 
-This document presents detailed **benchmarking, performance analysis, scalability evaluation, and optimization insights** for a custom-built search engine.  
-All measurements were taken on a single-machine setup unless stated otherwise.
+A complete implementation of **Multi-Version Concurrency Control (MVCC)** from scratch in pure Python.
 
----
-
-## Performance Metrics Overview
-
-- Indexing throughput: up to **5,000 documents/sec**
-- Query latency (cached): **~40 ms**
-- Query latency (cold): **~450 ms**
-- Cache hit rate (realistic workload): **~85%**
-- Sustainable throughput: **25 QPS cold**, **1000+ QPS cached**
-- Maximum tested scale: **1M documents (single node)**
+This project demonstrates how modern databases support **high concurrency without locking**, using multi-version storage, snapshot isolation, conflict detection, and garbage collection. It is designed as a systems-level project for learning, experimentation, and portfolio use.
 
 ---
 
-## 1. Indexing Performance
+## Quick Start
+---
 
-### Single-Threaded Indexing
+````markdown
 
-| Documents | Time | Rate |
-|---------|------|------|
-| 1,000 | 0.8s | 1,250 docs/sec |
-| 10,000 | 8.0s | 1,250 docs/sec |
-| 100,000 | 80s | 1,250 docs/sec |
-| 1,000,000 | 800s (~13 min) | 1,250 docs/sec |
 
-Indexing scales linearly with document count.
+```bash
+# Run all tests
+python mvcc.py
+
+# Run interactive demo
+python demo.py
+Performance Metrics
+Scenario	Throughput	Average Latency	Max Latency
+Read-heavy workload	100+ tx/sec	0.5 ms	2.1 ms
+Write-heavy workload	50+ tx/sec	0.5 ms	2.1 ms
+Concurrent execution	50+ transactions	Stable	No deadlocks
+What Is MVCC?
+Multi-Version Concurrency Control (MVCC) allows multiple versions of data to coexist instead of relying on locks.
+Each transaction operates on a consistent snapshot of the database taken at transaction start, even while other transactions commit changes.
+Benefits
+No deadlocks due to lock-free reads
+No reader–writer blocking
+Snapshot isolation guarantees consistency
+High concurrency under mixed workloads
+Features Implemented
+Multi-version data storage with full history
+Snapshot isolation for lock-free reads
+Write-write conflict detection
+Automatic garbage collection of old versions
+Thread-safe concurrent transactions
+Built-in performance benchmarking
+Project Structure
+````
 
 ---
 
-### Multi-Threaded Indexing (4 Threads)
+## Performance Metrics
 
-| Documents | Time | Rate | Speedup |
-|---------|------|------|---------|
-| 1,000 | 0.2s | 5,000 docs/sec | 4x |
-| 10,000 | 2.0s | 5,000 docs/sec | 4x |
-| 1,000,000 | 200s (~3 min) | 5,000 docs/sec | 4x |
-
-Threading achieves near-perfect linear speedup.
+* Read-heavy workload: 100+ transactions/second
+* Write-heavy workload: 50+ transactions/second
+* Average latency: 0.5 ms
+* Maximum latency: 2.1 ms
+* Concurrent execution: 50+ concurrent transactions
 
 ---
 
-### Memory Usage
+## What Is MVCC?
 
-| Documents | Memory |
-|---------|--------|
-| 1,000 | 0.4 MB |
-| 10,000 | 4 MB |
-| 100,000 | 40 MB |
-| 1,000,000 | 400 MB |
+**Multi-Version Concurrency Control (MVCC)** maintains multiple versions of data instead of using locks.
 
-- Memory per document: **~400 bytes**
-- Memory efficiency: **~0.4 KB per document**
+Rather than blocking readers when writers are active, MVCC allows each transaction to read from a **consistent snapshot** taken when the transaction begins.
 
----
+### Benefits
 
-## 2. Query Performance
-
-### Cold Cache (First Query)
-
-Query: `python`  
-Total time: **450 ms**
-
-Breakdown:
-- Tokenization: 1 ms
-- Inverted index lookup: 5 ms
-- Ranking (TF-IDF, 10K docs): 400 ms
-- Result construction: 44 ms
+* No deadlocks due to lock-free reads
+* No reader–writer blocking
+* Snapshot isolation guarantees consistency
+* High concurrency under mixed workloads
 
 ---
 
-### Warm Cache (Repeat Query)
+## Features Implemented
 
-Query: `python`  
-Total time: **40 ms**
-
-- Speedup: **11.25x**
-- Operation: Cache lookup only
-
----
-
-### Query Comparison
-
-| Query | Cold | Warm | Speedup |
-|-----|------|------|---------|
-| python | 450 ms | 40 ms | 11.25x |
-| machine learning | 650 ms | 40 ms | 16.25x |
-| programming | 520 ms | 35 ms | 14.9x |
-| tutorial | 480 ms | 42 ms | 11.4x |
+* Multi-version data storage with full history
+* Snapshot isolation without locking
+* Write-write conflict detection
+* Automatic garbage collection of old versions
+* Thread-safe concurrent transactions
+* Latency and throughput performance tracking
 
 ---
 
-## 3. Throughput Benchmarks
+## Project Structure
 
-### Cold Cache
-
-- Single query: **2.2 QPS**
-- Sustained: **~2.2 QPS**
-- Bottleneck: TF-IDF ranking (88% of query time)
-
-### Warm Cache
-
-- Single query: **25 QPS**
-- 100 queries: **25 QPS**
-- 1,000 queries: **25 QPS**
-- Peak (all cached): **1000+ QPS**
-
----
-
-### Concurrent Throughput (Cached)
-
-| Concurrent Users | QPS |
-|-----------------|-----|
-| 10 | 250 |
-| 100 | 2,500 |
-| 1,000 | 25,000 |
-| 10,000 | 100,000+ |
-
-Limiting factor becomes **CPU and memory**, not algorithmic complexity.
+```
+.
+├── mvcc.py              # Core MVCC engine (~500 lines)
+├── mvcc.py              # Core MVCC implementation
+├── demo.py              # Interactive demonstrations
+├── README.md            # Project overview
+├── README.md            # Project documentation
+├── ARCHITECTURE.md      # Design decisions and algorithms
+├── INTERVIEW_QA.md      # 25+ interview questions and answers
+├── RESUME_BULLETS.md    # Resume-ready project highlights
+Test Coverage
+├── RESUME_BULLETS.md    # Project highlights
+```
 
 ---
 
-## 4. Cache Effectiveness
+## Test Results
 
-### Cache Hit Rate by Pattern
+All tests pass successfully:
+Basic versioning
+Snapshot isolation
+Commit and abort logic
+Transaction isolation
+Write-write conflict detection
+Multi-key atomic transactions (bank transfer)
+Concurrent transactions (50 threads)
+Garbage collection
+Read-heavy benchmark
+Write-heavy benchmark
+Latency distribution analysis
+11 out of 11 tests passing
+How to Use
+Basic Example
 
-- Repeated 100x: 100%
-- Repeated 10x: 90%
-- Random queries: 15%
-- Realistic workload: **~85%**
+* Basic Versioning
+* Snapshot Isolation
+* Simple Commit
+* Transaction Isolation
+* Write-Write Conflict Detection
+* Bank Transfer (Multi-key Transaction)
+* Concurrent Transactions (50 transactions)
+* Garbage Collection
+* Read-Heavy Benchmark
+* Write-Heavy Benchmark
+* Latency Distribution
 
-### Cache Size
-
-- Cached queries: 1,000
-- Memory per entry: 1–10 KB
-- Total cache size: ~10 MB
-
-### Cache Speedup
-
-- Without cache: 450 ms
-- With cache: 40 ms
-- Speedup: **11.25x**
-
----
-
-### CPU Savings (1M Queries / Year)
-
-- Without cache: ~125 CPU hours
-- With cache: ~11 CPU hours
-- Saved: **114 CPU hours/year**
-
----
-
-## 5. Scalability Analysis
-
-### Indexing
-
-- Linear scaling: 10x documents → 10x time
-- With sharding: Near O(1) growth with enough nodes
-
-### Query Time Breakdown
-
-| Component | Time | Complexity |
-|--------|------|------------|
-| Tokenization | 1 ms | O(q) |
-| Index lookup | 5 ms | O(log n) |
-| Ranking | 400 ms | O(df × q) |
-| Results | 44 ms | O(k) |
-
-Primary bottleneck: **Ranking (88%)**
+**11 / 11 tests passing**
 
 ---
 
-### Cache Hit Rate vs Users
+## Usage
 
-| Users | Hit Rate |
-|-----|----------|
-| 1 | 0% |
-| 10 | 15% |
-| 100 | 50% |
-| 1,000 | 85% |
-| 10,000 | 90%+ |
+### Basic Example
 
-More users increase cache efficiency.
+```python
+from mvcc import VersionStore, TransactionManager
 
----
+store = VersionStore()
+@@ -60,22 +105,28 @@ store.write('account', 100)
 
-## 6. Comparison with Production Systems
+tx = mgr.begin_transaction()
 
-### Elasticsearch Comparison
+balance = mgr.read(tx, 'account')
+mgr.write(tx, 'account', balance + 50)
+value = mgr.read(tx, 'account')
+mgr.write(tx, 'account', value + 50)
 
-| Metric | This Engine | Elasticsearch |
-|-----|-------------|---------------|
-| Scale | 1M docs | 10B+ docs |
-| Query latency | 40 ms (cached) | 5–50 ms |
-| Ranking | TF-IDF | BM25 |
-| Sharding | Not implemented | Built-in |
-| Cost | Free | Enterprise pricing |
-
-### Google Search (Contextual)
-
-| Metric | This Engine | Google |
-|-----|-------------|--------|
-| Documents | 1M | 8.5B |
-| Latency | 40 ms | <100 ms |
-| QPS | 1,000+ | 100K+ |
-| Ranking | TF-IDF | 200+ signals |
+result = mgr.commit(tx)
+print(f"Success: {result}")
+```
 
 ---
 
-## 7. Real-World Impact Scenarios
+success = mgr.commit(tx)
+print(f"Transaction success: {success}")
+Concurrent Transactions Example
+### Concurrent Example
 
-### Startup (1M Documents)
+```python
+import threading
 
-- Queries/day: 10,000
-- Average latency: ~85 ms
-- Infrastructure: 1 machine, 8 GB RAM
-- Cost: Free (self-hosted)
+def transfer(from_key, to_key, amount):
+    tx = mgr.begin_transaction()
 
-### Growing Startup (100M Documents)
+    from_balance = mgr.read(tx, from_key)
+    to_balance = mgr.read(tx, to_key)
+    from_bal = mgr.read(tx, from_key)
+    to_bal = mgr.read(tx, to_key)
 
-- Queries/day: 1M
-- Cache hit rate: 85%
-- Deployment: 10 shards
-- Estimated cost: ~$500/month
+    mgr.write(tx, from_key, from_balance - amount)
+    mgr.write(tx, to_key, to_balance + amount)
+    mgr.write(tx, from_key, from_bal - amount)
+    mgr.write(tx, to_key, to_bal + amount)
 
-### Enterprise (1B Documents)
+    return mgr.commit(tx)
 
-- Queries/day: 100M
-- Deployment: Distributed shards + ML ranking
-- Estimated cost: $1M+/year
+@@ -87,62 +138,72 @@ for _ in range(5):
 
----
-
-## 8. Optimization Opportunities
-
-### Quick Wins
-
-- Cache TTL tuning (+5% hit rate)
-- Stopword pruning (+10% speed)
-- Result pagination caching (+20% hit rate)
-
-### Medium Effort
-
-- Approximate ranking (50% faster, 1% accuracy loss)
-- Query expansion (+10% hit rate)
-- Index compression (memory reduction)
-
-### High Effort
-
-- Learning-to-rank (ML)
-- Distributed sharding
-- Semantic search (embeddings)
-
----
-
-## 9. Stress Test Results
-
-- Max concurrent queries: 1,000
-- Max QPS: 25 (cold), 1000+ (warm)
-- Max index size: ~10 GB (single node)
-- Failure handling: Graceful fallback to cold queries
+for t in threads:
+    t.join()
+This demonstrates safe, lock-free concurrent updates.
+Key Algorithms
+Snapshot Isolation
+Each transaction captures a snapshot at start
+Reads only versions visible to that snapshot
+Ensures consistency without locking
+Conflict Detection
+Track version IDs read during the transaction
+Validate versions at commit time
+Abort transaction on detected conflicts
+Garbage Collection
+Track the minimum active snapshot
+Delete versions older than that snapshot
+Guarantees safety and bounded memory growth
+Benchmark Results
+Read-heavy workload (1000 transactions, 10 reads each)
+Time: 0.95 seconds
+```
 
 ---
 
-## 10. Metrics Dashboard
+## Key Algorithms
 
-**Search Engine Performance** — 1000+ QPS (cached) · p99 latency: 40 ms · Cache hit rate: 85% · Index size (1M docs): 400 MB · Indexing: 5K docs/sec · Uptime: 100% · Tests: 10/10
+### Snapshot Isolation
+
+* Each transaction captures a snapshot at start
+* Reads only versions visible to that snapshot
+* Ensures consistency without locking
+
+### Conflict Detection
+
+* Track version identifiers for each read
+* Validate versions during commit
+* Abort transaction on conflict
+
+### Garbage Collection
+
+* Identify the minimum active snapshot
+* Remove versions older than that snapshot
+* Guarantees safety and bounded memory usage
+
+---
+
+## Benchmark Results
+
+### Read-Heavy Workload
+
+```
+1000 transactions
+Time: 0.95s
+Throughput: 105 transactions/second
+Write-heavy workload (500 transactions, 5 writes each)
+Time: 9.2 seconds
+```
+
+### Write-Heavy Workload
+
+```
+500 transactions
+Time: 9.2s
+Throughput: 54 transactions/second
+Latency Distribution
+```
+
+### Latency Distribution
+
+```
+Average: 0.542 ms
+Minimum: 0.123 ms
+Maximum: 2.145 ms
+Real-World Systems Using MVCC
+The concepts implemented here are used in:
+PostgreSQL
+MySQL InnoDB
+Oracle Database
+Learning Outcomes
+This project provides hands-on experience with:
+Concurrent data access in databases
+Multi-version storage models
+Transaction isolation and lifecycle
+Conflict detection mechanisms
+Garbage collection in storage engines
+Performance measurement and optimization
+Advanced Extensions
+This architecture can be extended to support:
+Distributed MVCC across nodes
+Serializable isolation
+Time-travel queries
+Schema and data versioning
+Write-ahead logging and durability
+Interview Readiness
+Well-suited for:
+Systems design interviews
+Backend and database engineering roles
+Advanced Python portfolios
+Includes 25+ prepared interview questions and answers in INTERVIEW_QA.md.
+License
+```
+
+---
+
+## Real-World Relevance
+
+This project demonstrates concepts used by production databases such as:
+
+* PostgreSQL
+* MySQL (InnoDB)
+* Oracle Database
+
+---
+
+## License
+
+MIT License.
