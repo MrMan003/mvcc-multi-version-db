@@ -471,11 +471,39 @@ def test_garbage_collection():
     print(f"Collected: {collected} versions")
     print(f"After GC: {after} versions")
     print("✅ Garbage collection working")
-
+def test_read_heavy_benchmark():
+    """Test 9: Read-heavy benchmark"""
+    print("\n" + "="*60)
+    print("TEST 9: Read-Heavy Benchmark (1000 transactions)")
+    print("="*60)
+    
+    store = VersionStore()
+    mgr = TransactionManager(store)
+    
+    for i in range(100):
+        store.write(f'key_{i}', 0)
+    
+    import random
+    start = time.time()
+    
+    for _ in range(1000):
+        tx = mgr.begin_transaction()
+        
+        for _ in range(10):
+            mgr.read(tx, f'key_{random.randint(0, 99)}')
+        
+        mgr.commit(tx)
+    
+    elapsed = time.time() - start
+    throughput = 1000 / elapsed
+    
+    print(f"Time: {elapsed:.2f}s")
+    print(f"Throughput: {throughput:.0f} tx/sec")
+    print("✅ Read-heavy benchmark passed")
 
 if __name__ == '__main__':
     print("\n" + "=" * 70)
-    print("DAY 1: FOUNDATION + CONFLICT DETECTION")
+    print("DAY 2: read-heavy benchmark")
     print("=" * 70)
 
     test_basic_versioning()
@@ -486,7 +514,8 @@ if __name__ == '__main__':
     test_bank_transfer()
     test_concurrent_transactions()
     test_garbage_collection()
+    test_read_heavy_benchmark()
 
     print("\n" + "=" * 70)
-    print("ALL 8 TESTS PASSED! ✅")
+    print("ALL 9 TESTS PASSED! ✅")
     print("=" * 70)
