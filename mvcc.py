@@ -96,6 +96,28 @@ class Transaction:
 
 class TransactionManager:
     """Manages all transactions"""
+    def get_stats(self):
+        """Get statistics"""
+        import statistics
+        
+        total = self.committed_count + self.aborted_count
+        success_rate = (self.committed_count / total * 100) if total > 0 else 0
+        
+        latency_stats = {}
+        if self.latencies:
+            latency_stats = {
+            'avg_latency_ms': statistics.mean(self.latencies),
+            'min_latency_ms': min(self.latencies),
+            'max_latency_ms': max(self.latencies)
+            }
+        
+        return {
+            'committed': self.committed_count,
+            'aborted': self.aborted_count,
+            'success_rate': success_rate,
+            **latency_stats
+        }
+
 
     def __init__(self, version_store):
         self.version_store = version_store
